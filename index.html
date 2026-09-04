@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CFA Level II</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="CFA L2">
+<meta name="theme-color" content="#faf9f6">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
+<style>
+  html, body { margin: 0; padding: 0; background: #faf9f6; }
+  body { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="hd">
+    <div class="hd-top">
+      <div class="count">
+        <span class="count-num" id="daysLeft">—</span>
+        <span class="count-lbl">days to 18 November</span>
+      </div>
+      <div class="tally">
+        <span id="chCount">0</span><span class="tally-of">/37 chapters</span>
+        <span class="tally-hrs" id="dayNote">0 of 78 days ticked</span>
+      </div>
+    </div>
+    <div class="bar"><div class="bar-fill" id="barFill"></div></div>
+    <div class="runway" id="runway" role="list" aria-label="Study days"></div>
+    <p class="legend">
+      <span class="k k-done"></span>done
+      <span class="k k-today"></span>today
+      <span class="k k-miss"></span>missed
+      <span class="k-ring"></span>questions or mock
+    </p>
+  </header>
+
+  <main id="list" aria-live="polite"></main>
+
+  <footer class="ft">
+    <p>37 chapters, 1,011 pages, starting 2 September. No day mixes two chapters. Revision runs 45 minutes on Fridays, Saturdays, Sundays and Mondays from 18 September, on top of that day's work.</p>
+    <p id="storeWarn" class="warn" hidden>This browser is not saving your ticks. Use Back up below and keep the code somewhere safe.</p>
+    <div class="ft-btns">
+      <button id="backup" class="reset">Back up</button>
+      <button id="restore" class="reset">Restore</button>
+      <button id="reset" class="reset">Clear all progress</button>
+    </div>
+    <textarea id="codebox" class="codebox" hidden spellcheck="false" placeholder="Paste a backup code here, then tap Restore again"></textarea>
+  </footer>
+</div>
+
+<style>
+  #app {
+    --paper: #faf9f6;
+    --ink: #1a2430;
+    --ink-soft: #5f6d7a;
+    --rule: #dcd9d2;
+    --indigo: #2b3a80;
+    --gold: #d99b06;
+    --moss: #497a55;
+    --miss: #c2705f;
+    --plum: #6b4a7a;
+    --serif: ui-serif, Georgia, "Iowan Old Style", "Times New Roman", serif;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-family: var(--sans);
+    color: var(--ink);
+    background: var(--paper);
+    max-width: 640px;
+    margin: 0 auto;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+  #app * { box-sizing: border-box; }
+
+  .hd { position: sticky; top: 0; z-index: 5; background: var(--paper); border-bottom: 1px solid var(--rule); padding: 14px 16px 10px; }
+  .hd-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .count-num { font-family: var(--serif); font-size: 46px; line-height: 1; letter-spacing: -0.02em; color: var(--indigo); }
+  .count-lbl { display: block; font-size: 12px; color: var(--ink-soft); margin-top: 3px; }
+  .tally { text-align: right; font-size: 13px; color: var(--ink-soft); }
+  .tally #chCount { font-family: var(--serif); font-size: 20px; color: var(--ink); }
+  .tally-hrs { display: block; font-size: 11px; margin-top: 2px; }
+
+  .bar { height: 3px; background: #e7e4dd; border-radius: 2px; margin: 11px 0 9px; overflow: hidden; }
+  .bar-fill { height: 100%; width: 0; background: var(--moss); }
+
+  .runway { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; margin: 0 0 6px; }
+  .cell { aspect-ratio: 1; border-radius: 2px; background: #e7e4dd; border: none; padding: 0; cursor: pointer; }
+  .cell.done { background: var(--moss); }
+  .cell.miss { background: var(--miss); opacity: .45; }
+  .cell.today { background: var(--gold); box-shadow: 0 0 0 2px var(--paper), 0 0 0 3.5px var(--gold); }
+  .cell.q { border-radius: 50%; }
+  .cell:focus-visible { outline: 2px solid var(--indigo); outline-offset: 2px; }
+
+  .legend { font-size: 11px; color: var(--ink-soft); margin: 4px 0 0; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  .k { width: 9px; height: 9px; border-radius: 2px; display: inline-block; margin-left: 9px; }
+  .legend .k:first-child { margin-left: 0; }
+  .k-done { background: var(--moss); }
+  .k-today { background: var(--gold); }
+  .k-miss { background: var(--miss); opacity: .45; }
+  .k-ring { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--ink-soft); display: inline-block; margin-left: 9px; }
+
+  .wk { border-bottom: 1px solid var(--rule); }
+  .wk-hd { padding: 20px 16px 8px; }
+  .wk-n { font-family: var(--serif); font-size: 17px; }
+  .wk-th { font-size: 12.5px; color: var(--ink-soft); margin-top: 1px; }
+
+  .day { display: flex; gap: 11px; align-items: flex-start; padding: 10px 16px; border-top: 1px solid #edeae3; cursor: pointer; }
+  .day.is-today { background: #fdf6e3; box-shadow: inset 3px 0 0 var(--gold); }
+  .day.is-done .d-title { color: var(--ink-soft); text-decoration: line-through; text-decoration-thickness: 1px; }
+  .day.is-done .d-date { opacity: .5; }
+
+  .box { flex: none; width: 21px; height: 21px; margin-top: 2px; border: 1.5px solid #c3bfb6; border-radius: 5px; background: transparent; cursor: pointer; padding: 0; display: grid; place-items: center; }
+  .day.is-done .box { background: var(--moss); border-color: var(--moss); }
+  .box svg { width: 12px; height: 12px; opacity: 0; }
+  .day.is-done .box svg { opacity: 1; }
+  .box:focus-visible { outline: 2px solid var(--indigo); outline-offset: 2px; }
+
+  .d-body { flex: 1; min-width: 0; }
+  .d-date { font-family: var(--serif); font-size: 12px; color: var(--indigo); }
+  .d-meta { font-size: 11px; color: var(--ink-soft); font-family: var(--serif); }
+  .d-title { font-size: 14.5px; margin: 1px 0 0; }
+  .d-rev { font-size: 12.5px; color: var(--plum); margin: 3px 0 0; }
+  .d-detail { display: none; margin: 7px 0 2px; padding-left: 0; list-style: none; }
+  .day.open .d-detail { display: block; }
+  .d-detail li { font-size: 12.5px; color: var(--ink-soft); padding: 2.5px 0 2.5px 13px; position: relative; }
+  .d-detail li::before { content: ""; position: absolute; left: 0; top: 11px; width: 6px; height: 1px; background: #b9b4aa; }
+
+  .tag { display: inline-block; font-size: 10.5px; padding: 1px 6px; border-radius: 3px; margin-left: 6px; vertical-align: 1px; }
+  .tag-mock { background: var(--indigo); color: #fff; }
+  .tag-q { background: #e9edf7; color: var(--indigo); }
+  .tag-rest { background: #e7e4dd; color: var(--ink-soft); }
+  .tag-exam { background: var(--gold); color: #3a2a00; }
+  .tag-sat { background: #f3ead4; color: #7a5c00; }
+
+  .ft { padding: 22px 16px 30px; font-size: 12px; color: var(--ink-soft); }
+  .ft-btns { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 8px; }
+  .reset { font: inherit; font-size: 12px; background: none; border: 1px solid var(--rule); border-radius: 5px; padding: 7px 11px; color: var(--ink-soft); cursor: pointer; }
+  .reset:active { background: #f0ede6; }
+  .codebox { width: 100%; margin-top: 9px; font-family: ui-monospace, Menlo, monospace; font-size: 11px; border: 1px solid var(--rule); border-radius: 5px; padding: 8px; min-height: 74px; background: #fff; color: var(--ink); }
+  .warn { color: var(--miss); }
+
+  @media (prefers-reduced-motion: no-preference) { .box, .day, .bar-fill { transition: all .15s ease; } }
+</style>
+
+<script>
+(function () {
+  var KEY = "cfa-l2-sep2-tracker";
+  var EXAM = "2026-11-18";
+
+  // [date, meta, title, [detail], tag, closesChapter, revision]
+  var WEEKS = [
+    { n: "Week 1", label: "2–6 Sep", theme: "Equity: dividends, cash flow, framework", days: [
+      ["2026-09-02","28 pp, day 1 of 2","Discounted Dividend Valuation",["Dividend forms, payment chronology, when DDM is the right model","Gordon growth: derivation, required return, implied growth rate","Take the first day slower than the page count suggests"]],
+      ["2026-09-03","28 pp, day 2 of 2","Discounted Dividend Valuation",["Two-stage, H-model, three-stage. Terminal value approaches","PVGO, sustainable growth via DuPont","Which variant suits which company. Chapter closed"],"",true],
+      ["2026-09-04","26 pp, one day","Free Cash Flow Valuation",["FCFF and FCFE from net income, EBIT, EBITDA and CFO","Moving between FCFF and FCFE in both directions","Single and two-stage models, sensitivity, non-operating assets"],"",true],
+      ["2026-09-05","14 pp, one day","Equity Valuation",["Value definitions, intrinsic value, going concern","Absolute vs relative models and when each applies","The shortest equity chapter. Reading Saturday"],"sat",true],
+      ["2026-09-06","","Questions on the three equity chapters",["70 item-set questions across DDM, Free Cash Flow and Equity Valuation","Redo every computation you missed by hand, without notes","Start your error log today. One line per miss: chapter, error, cause"],"q"]
+    ]},
+    { n: "Week 2", label: "7–13 Sep", theme: "Quant, then into FSA", days: [
+      ["2026-09-07","48 pp, day 1 of 2","Regression",["Uses of multiple regression, interpreting slope coefficients","The assumptions and what each one failing does to your results","Goodness of fit, adjusted R squared, ANOVA, F-test"]],
+      ["2026-09-08","48 pp, day 2 of 2","Regression",["Misspecification: omitted variables, heteroskedasticity, serial correlation, multicollinearity","Dummy variables, interaction terms, logistic regression","Your longest quant chapter. Chapter closed"],"",true],
+      ["2026-09-09","30 pp, one day","Time Series",["Trend models, autoregressive models, chain rule of forecasting","Mean reversion, RMSE, random walks, unit roots, Dickey-Fuller","Seasonality, ARCH, cointegration. Write the model selection tree at the end"],"",true],
+      ["2026-09-10","27 pp, one day","Inter Corporate Investment",["Classification of investments under IFRS and US GAAP","Equity method: mechanics, excess purchase price, impairment","Acquisition method, full vs partial goodwill, non-controlling interest"],"",true],
+      ["2026-09-11","35 pp, day 1 of 2","Employee Compensation",["Defined benefit obligation, funded status, periodic pension cost","Split between profit and loss and other comprehensive income"]],
+      ["2026-09-12","35 pp, day 2 of 2","Employee Compensation",["Effect of assumption changes on the obligation and on cost","Cash flow reclassification, share-based compensation","Reading Saturday. Chapter closed"],"sat",true],
+      ["2026-09-13","","Questions on Regression, Time Series, Inter Corporate Investment",["80 item-set questions across the three chapters","20 spaced from week 1. Error log pass"],"q"]
+    ]},
+    { n: "Week 3", label: "14–20 Sep", theme: "Multiples, term structure. Revision starts Friday", days: [
+      ["2026-09-14","25 pp, one day","Multinational Corporation",["Functional, presentation and local currency","Current rate method vs temporal method, step by step","Where the translation gain or loss lands, ratio effects, hyperinflation"],"",true],
+      ["2026-09-15","38 pp, day 1 of 2","Market Based Valuation",["Justified multiples from fundamentals vs comparables","P/E variants, normalised earnings, P/B, P/S, P/CF"]],
+      ["2026-09-16","38 pp, day 2 of 2","Market Based Valuation",["Enterprise value multiples, momentum indicators","Screening and the pitfalls of comparables","Your longest equity chapter. Chapter closed"],"",true],
+      ["2026-09-17","20 pp, one day","Residual Income",["The general model, economic value added, market value added","Continuing residual income, book value and clean surplus adjustments","Strengths and weaknesses against DDM and Free Cash Flow"],"",true],
+      ["2026-09-18","25 pp, one day","Term Structure and Interest Rate",["Spot, par and forward curves. Forward pricing and forward rate models","Riding the yield curve, swap spread, z-spread, TED and Libor-OIS","Theories of the term structure, key rate duration, shaping risk"],"",true,"DDM and Free Cash Flow. Notes and formula sheet only, not a re-read"],
+      ["2026-09-19","19 pp, one day","The Arbitrage Free Valuation",["Arbitrage opportunity, value additivity, dominance","Binomial interest rate trees, calibration, backward induction","Pathwise valuation and Monte Carlo. Reading Saturday"],"sat",true,"Equity Valuation and Regression"],
+      ["2026-09-20","","Questions on Employee Compensation, Multinational, Market Based, Residual Income",["80 item-set questions","Do one full current rate vs temporal example by hand before starting"],"q",false,"Time Series and Inter Corporate Investment"]
+    ]},
+    { n: "Week 4", label: "21–27 Sep", theme: "Closing FSA and equity, opening derivatives", days: [
+      ["2026-09-21","26 pp, one day","Analysis of Financial Institutes",["Why banks and insurers need a different analytical framework","CAMELS: capital, asset quality, management, earnings, liquidity, sensitivity","Property and casualty vs life insurer analysis"],"",true,"Employee Compensation and Multinational Corporation"],
+      ["2026-09-22","21 pp, one day","Evaluating Quality of Financial Reports",["The quality spectrum, conservative vs aggressive accounting choices","Warning signs in earnings, cash flow and the balance sheet","Bankruptcy prediction models"],"",true],
+      ["2026-09-23","13 pp, one day","Integration of Financial Statement",["Applying the full FSA toolkit to a single case","The framework for a complete analysis","Financial Statement Analysis complete, six chapters, 147 pages"],"",true],
+      ["2026-09-24","32 pp, day 1 of 2","Private Company Valuation",["Reasons for private valuation, definitions of value","Normalisation of earnings, the income approach, cash flow estimation"]],
+      ["2026-09-25","32 pp, day 2 of 2","Private Company Valuation",["Market and asset-based approaches, guideline transactions","Discounts for lack of control and marketability","Equity complete, six chapters, 158 pages"],"",true,"Market Based Valuation and Residual Income"],
+      ["2026-09-26","31 pp, day 1 of 2","Pricing and Valuation of Forwards",["Carry arbitrage and the no-arbitrage forward price","Equity, fixed income and currency forwards and futures","Reading Saturday"],"sat",false,"Term Structure and Arbitrage Free Valuation"],
+      ["2026-09-27","","Questions, plus the first checkpoint",["80 questions on Term Structure, Arbitrage Free, Financial Institutes, Quality, Integration, Private Company","Checkpoint: 20 of 37 chapters closed. More than three days short here and November is at genuine risk"],"q",false,"Financial Institutes, Quality of Reports, Integration"]
+    ]},
+    { n: "Week 5", label: "28 Sep – 4 Oct", theme: "Derivatives, then economics", days: [
+      ["2026-09-28","31 pp, day 2 of 2","Pricing and Valuation of Forwards",["Interest rate swaps: pricing the fixed rate, valuing mid-life","Currency and equity swaps, swap as a series of forwards","Chapter closed"],"",true,"DDM and Free Cash Flow, second pass"],
+      ["2026-09-29","40 pp, day 1 of 2","Contingent Claims",["Put-call parity, put-call forward parity, synthetic positions","One-period and two-period binomial models, risk-neutral probabilities","American options and early exercise"]],
+      ["2026-09-30","40 pp, day 2 of 2","Contingent Claims",["Black-Scholes-Merton assumptions and inputs, the Black model","Interest rate options and swaptions","Greeks and dynamic hedging. Derivatives complete"],"",true],
+      ["2026-10-01","30 pp, one day","Currency Exchange",["Bid-ask, cross rates, forward premium and discount","Covered and uncovered interest rate parity, purchasing power parity","Carry trade and crash risk, Mundell-Fleming, capital flows"],"",true],
+      ["2026-10-02","22 pp, one day","Economic Growth",["Growth factors, production function, capital deepening","Classical, neoclassical and endogenous growth theories","Convergence hypotheses, trade and openness. Economics complete"],"",true,"Private Company Valuation and Regression, second pass"],
+      ["2026-10-03","31 pp, day 1 of 2","Bonds with Options",["Callable and putable bonds valued on a binomial tree","Effect of interest rate volatility and curve level on option value","Reading Saturday"],"sat",false,"Forwards and Contingent Claims"],
+      ["2026-10-04","","Questions on Forwards, Contingent Claims, Currency Exchange, Economic Growth",["80 item-set questions","Build a two-period option tree by hand before starting"],"q",false,"Inter Corporate Investment and Employee Compensation, second pass"]
+    ]},
+    { n: "Week 6", label: "5–11 Oct", theme: "Closing fixed income, opening corporate issuers", days: [
+      ["2026-10-05","31 pp, day 2 of 2","Bonds with Options",["Option-adjusted spread and what it says about relative value","Effective duration, effective convexity, one-sided and key rate durations","Capped and floored floaters, convertible bonds. Chapter closed"],"",true,"Time Series and Multinational Corporation, second pass"],
+      ["2026-10-06","34 pp, day 1 of 2","Credit Analysis",["Expected exposure, loss given default, probability of default","Credit valuation adjustment, credit scores and ratings"]],
+      ["2026-10-07","34 pp, day 2 of 2","Credit Analysis",["Structural vs reduced form models","Credit spread analysis and the term structure of credit spreads","Chapter closed"],"",true],
+      ["2026-10-08","17 pp, one day","Credit Default Swaps",["CDS mechanics, single name, index and tranche. Credit events and settlement","Pricing: upfront payment, spread, duration","Basis and curve trades. Fixed Income complete, 126 pages"],"",true],
+      ["2026-10-09","26 pp, one day","Analysis of Dividends and Share Repurchases",["Dividend theories, signalling, clientele effects, agency costs","Payout policies, repurchase vs dividend","Dividend safety analysis"],"",true,"Currency Exchange and Economic Growth"],
+      ["2026-10-10","16 pp, one day","ESG",["ESG integration in equity and fixed income analysis","Material factors by sector, data sources and their limits","Reading Saturday. A short chapter, bank the spare hour"],"sat",true,"Market Based Valuation and Residual Income, second pass"],
+      ["2026-10-11","","Questions on Bonds with Options, Credit Analysis, Credit Default Swaps",["80 item-set questions","Value one callable bond on a tree and back out the OAS before starting"],"q",false,"Bonds with Options and Credit Analysis"]
+    ]},
+    { n: "Week 7", label: "12–18 Oct", theme: "Portfolio management, closing corporate issuers", days: [
+      ["2026-10-12","26 pp, one day","Multi factor Models",["Arbitrage pricing theory and its assumptions","Macroeconomic vs fundamental factor models","Active risk decomposition, factor portfolios, tracking error"],"",true,"Term Structure and Arbitrage Free Valuation, second pass"],
+      ["2026-10-13","33 pp, day 1 of 2","Active Portfolio Management",["Active return and active risk, information ratio vs Sharpe ratio","Building the active portfolio, the Treynor-Black approach"]],
+      ["2026-10-14","33 pp, day 2 of 2","Active Portfolio Management",["The fundamental law of active management, transfer coefficient","Comparing market timing, security selection and factor bets","Chapter closed"],"",true],
+      ["2026-10-15","27 pp, one day","Economics and Investments Markets",["Discount rates, the real default-free rate, risk premiums","Business cycle effects on bonds, credit and equity returns","Yield curve and the economic cycle"],"",true],
+      ["2026-10-16","21 pp, one day","Cost of Capital",["Cost of debt and equity for a project versus a company","Country risk premium, developing market adjustments","Capital structure effects on the discount rate"],"",true,"Credit Default Swaps, Dividends and ESG"],
+      ["2026-10-17","15 pp, one day","Corporate Restructuring",["Investment, divestment and structural restructuring types","Valuation of mergers and acquisitions, comparable company and transaction analysis","Corporate Issuers complete. Reading Saturday"],"sat",true,"Private Company Valuation and Contingent Claims, second pass"],
+      ["2026-10-18","","Questions on Dividends, ESG, Multi factor Models, Active PM, Economics and Investments Markets",["90 item-set questions","40 spaced from weeks 5 and 6. Error log pass"],"q",false,"All six FSA chapters as one block. Third pass on translation and pensions"]
+    ]},
+    { n: "Week 8", label: "19–25 Oct", theme: "Alternatives, then back to portfolio management", days: [
+      ["2026-10-19","25 pp, one day","Commodities",["Commodity sectors, life cycles, valuation, theories of futures returns","Futures curve, contango and backwardation, roll return","Index construction and reweighting"],"",true,"Multi factor Models and Active Portfolio Management"],
+      ["2026-10-20","40 pp, day 1 of 2","Real Estates",["Appraisal methods: income, cost and sales comparison approaches","Net operating income, capitalisation rates, discounted cash flow"]],
+      ["2026-10-21","40 pp, day 2 of 2","Real Estates",["Property types and their risk factors, debt and equity claims","Due diligence, indexes and their limitations","Chapter closed"],"",true],
+      ["2026-10-22","15 pp, one day","Investment in Real Estate",["REITs and REOCs, structures and tax treatment","Net asset value per share, FFO and AFFO","Comparing public and private real estate exposure"],"",true],
+      ["2026-10-23","16 pp, one day","Exchange Traded Funds",["Creation and redemption, premiums and discounts, tracking error","ETF-specific risks, tax and cost considerations","Portfolio applications"],"",true,"Economics and Investments Markets, Cost of Capital, Corporate Restructuring"],
+      ["2026-10-24","","Questions on Cost of Capital, Restructuring, Commodities, Real Estates, Investment in Real Estate",["90 item-set questions across the five chapters"],"q",false,"All six equity chapters as one block"],
+      ["2026-10-25","","Questions, spaced review",["70 spaced questions from weeks 4 to 7","Error log pass. Your last full question weekend before mocks begin"],"q",false,"All five fixed income chapters as one block"]
+    ]},
+    { n: "Week 9", label: "26 Oct – 1 Nov", theme: "The last chapters, then the first mock", days: [
+      ["2026-10-26","37 pp, day 1 of 2","Measuring and Managing Market Risk",["Value at risk by parametric, historical and Monte Carlo methods","Advantages, limitations and extensions of VaR"],"",false,"Commodities, Real Estates, Investment in Real Estate"],
+      ["2026-10-27","37 pp, day 2 of 2","Measuring and Managing Market Risk",["Sensitivity and scenario measures","Risk budgeting, position and risk constraints","Chapter closed"],"",true],
+      ["2026-10-28","29 pp, one day","Backtesting",["The backtesting process, rolling windows, and what goes wrong","Scenario analysis and simulation, historical vs Monte Carlo","Portfolio Management complete, six chapters, 168 pages"],"",true],
+      ["2026-10-29","53 pp, day 1 of 2","Hedge Fund",["Strategy classification and industry structure","Equity and event driven strategies","Your longest chapter. Two days, and both will be full"]],
+      ["2026-10-30","53 pp, day 2 of 2","Hedge Fund",["Relative value and opportunistic strategies","Fee calculations, high water marks, hurdle rates, index biases","All 37 chapters and 1,011 pages complete"],"",true,"Derivatives, quant and economics as one block. The last chapters still untouched by revision"],
+      ["2026-10-31","","Mock 1, full length and timed",["Both sessions, exam conditions, no notes","Score it, but treat it as a diagnostic. A low score here is normal and expected"],"mock"],
+      ["2026-11-01","","Review Mock 1 in full",["Work every miss back to its cause. Sort the error log by chapter","Rank your three weakest chapters by weight times weakness. They drive the next fortnight"],"rest"]
+    ]},
+    { n: "Week 10", label: "2–8 Nov", theme: "Volume and repair, then mock 2", days: [
+      ["2026-11-02","","Volume plus weakest chapter",["2.5h: 100 mixed item-set questions","1.5h: re-read your weakest chapter"]],
+      ["2026-11-03","","Volume plus second weakest",["2.5h: 100 mixed item-set questions","1.5h: re-read your second weakest chapter"]],
+      ["2026-11-04","","Volume plus third weakest",["2.5h: 100 mixed item-set questions","1.5h: re-read your third weakest chapter"]],
+      ["2026-11-05","","FSA and equity weighted drill",["2.5h: 100 questions weighted to your two heaviest topic areas, 305 pages between them","1.5h: error log pass"]],
+      ["2026-11-06","","Re-derive by hand: dividends, cash flow, translation, pensions",["2h: multistage DDM, FCFF from net income, current rate vs temporal, pension cost split","2h: 80 questions on those chapters"]],
+      ["2026-11-07","","Mock 2, full length and timed",["Same conditions as mock 1","Compare chapter-level scores against mock 1, not just the total"],"mock"],
+      ["2026-11-08","","Review Mock 2 in full",["Spend as long reviewing as you spent sitting it","Update the error log and re-rank your weak chapters"],"rest"]
+    ]},
+    { n: "Week 11", label: "9–15 Nov", theme: "Mocks 3 and 4", days: [
+      ["2026-11-09","","Re-derive by hand: trees, spreads, options, swaps",["2h: callable bond on a tree and OAS, two-period option tree, swap valuation","2h: 80 questions on fixed income and derivatives"]],
+      ["2026-11-10","","Weighted volume",["3h: 100 questions weighted to whatever mock 2 exposed","1h: error log and formula sheet"]],
+      ["2026-11-11","","Mock 3, full length and timed",["Your best predictor. Watch the pace as closely as the score"],"mock"],
+      ["2026-11-12","","Review Mock 3, decision point",["4h: every miss back to its cause","If you are still well below passing, spend the last five days on your three weakest high-weight chapters only, not on breadth"]],
+      ["2026-11-13","","Flagged chapters only",["3h: 80 questions on flagged chapters","1h: formula sheet out loud from memory"]],
+      ["2026-11-14","","Mock 4, the last one",["Start at the same clock time as your real exam session"],"mock"],
+      ["2026-11-15","","Review Mock 4. Nothing new after today",["4h review","No new material and no more mocks from here"],"rest"]
+    ]},
+    { n: "Final days", label: "16–18 Nov", theme: "Taper and sit it", days: [
+      ["2026-11-16","","Light review, flagged chapters only",["2 to 3h maximum: error log, formula sheet, 60 questions on flagged chapters","Sleep early"]],
+      ["2026-11-17","","No studying",["Confirm the test centre route and travel time. ID and permitted materials ready tonight","Rest. Studying today costs more than it adds"],"rest"],
+      ["2026-11-18","","CFA Level II exam",["Read the questions before the vignette, then read the vignette once properly","37 chapters and four mocks behind you. Trust that"],"exam"]
+    ]}
+  ];
+
+  var done = {};
+  var listEl = document.getElementById("list");
+  var runwayEl = document.getElementById("runway");
+  var todayStr = toKey(new Date());
+  var flat = [];
+  WEEKS.forEach(function (w) { w.days.forEach(function (d) { flat.push(d); }); });
+
+  function toKey(dt) { return dt.getFullYear() + "-" + pad(dt.getMonth() + 1) + "-" + pad(dt.getDate()); }
+  function pad(n) { return n < 10 ? "0" + n : "" + n; }
+  function fmt(key) {
+    var p = key.split("-");
+    var dt = new Date(+p[0], +p[1] - 1, +p[2]);
+    var wd = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][dt.getDay()];
+    var mo = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][dt.getMonth()];
+    return wd + " " + (+p[2]) + " " + mo;
+  }
+
+  function build() {
+    listEl.innerHTML = "";
+    runwayEl.innerHTML = "";
+
+    WEEKS.forEach(function (w) {
+      var sec = document.createElement("section");
+      sec.className = "wk";
+      var hd = document.createElement("div");
+      hd.className = "wk-hd";
+      hd.innerHTML = '<div class="wk-n">' + w.n + ", " + w.label + '</div><div class="wk-th">' + w.theme + "</div>";
+      sec.appendChild(hd);
+
+      w.days.forEach(function (d) {
+        var key = d[0];
+        var row = document.createElement("article");
+        row.className = "day";
+        row.id = "d-" + key;
+        if (key === todayStr) row.classList.add("is-today");
+        if (done[key]) row.classList.add("is-done");
+
+        var tag = "";
+        if (d[4] === "mock") tag = '<span class="tag tag-mock">mock</span>';
+        if (d[4] === "q") tag = '<span class="tag tag-q">questions</span>';
+        if (d[4] === "rest") tag = '<span class="tag tag-rest">review only</span>';
+        if (d[4] === "sat") tag = '<span class="tag tag-sat">reading Saturday</span>';
+        if (d[4] === "exam") tag = '<span class="tag tag-exam">exam day</span>';
+
+        var meta = d[1] ? '<span class="d-meta">  ·  ' + d[1] + "</span>" : "";
+        var rev = d[6] ? '<p class="d-rev">Revision, 45 min: ' + d[6] + "</p>" : "";
+        var items = d[3].map(function (x) { return "<li>" + x + "</li>"; }).join("");
+
+        row.innerHTML =
+          '<button class="box" aria-label="Mark ' + fmt(key) + ' complete" aria-pressed="' + (!!done[key]) + '">' +
+            '<svg viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3.2L13 5"/></svg>' +
+          "</button>" +
+          '<div class="d-body">' +
+            '<div class="d-date">' + fmt(key) + meta + tag + "</div>" +
+            '<p class="d-title">' + d[2] + "</p>" + rev +
+            '<ul class="d-detail">' + items + "</ul>" +
+          "</div>";
+
+        row.addEventListener("click", function (e) {
+          if (e.target.closest(".box")) return;
+          row.classList.toggle("open");
+        });
+        row.querySelector(".box").addEventListener("click", function (e) {
+          e.stopPropagation();
+          toggle(key);
+        });
+        sec.appendChild(row);
+      });
+      listEl.appendChild(sec);
+    });
+
+    flat.forEach(function (d) {
+      var key = d[0];
+      var c = document.createElement("button");
+      c.className = "cell";
+      c.setAttribute("role", "listitem");
+      c.setAttribute("aria-label", fmt(key));
+      if (d[4] === "q" || d[4] === "mock" || d[4] === "exam") c.classList.add("q");
+      if (done[key]) c.classList.add("done");
+      else if (key < todayStr) c.classList.add("miss");
+      if (key === todayStr) { c.classList.remove("miss"); c.classList.add("today"); }
+      c.addEventListener("click", function () {
+        var t = document.getElementById("d-" + key);
+        if (t) { t.scrollIntoView({ block: "center", behavior: "smooth" }); t.classList.add("open"); }
+      });
+      runwayEl.appendChild(c);
+    });
+
+    stats();
+  }
+
+  function stats() {
+    var days = Object.keys(done).filter(function (k) { return done[k]; }).length;
+    var ch = flat.reduce(function (s, d) { return s + (d[5] && done[d[0]] ? 1 : 0); }, 0);
+    document.getElementById("chCount").textContent = ch;
+    document.getElementById("dayNote").textContent = days + " of 78 days ticked";
+    document.getElementById("barFill").style.width = Math.min(100, (ch / 37) * 100) + "%";
+    var ms = new Date(EXAM) - new Date(todayStr);
+    document.getElementById("daysLeft").textContent = Math.max(0, Math.round(ms / 86400000));
+  }
+
+  function toggle(key) {
+    done[key] = !done[key];
+    if (!done[key]) delete done[key];
+    var row = document.getElementById("d-" + key);
+    row.classList.toggle("is-done", !!done[key]);
+    row.querySelector(".box").setAttribute("aria-pressed", !!done[key]);
+    var i = flat.findIndex(function (d) { return d[0] === key; });
+    var cell = runwayEl.children[i];
+    if (cell) {
+      cell.classList.toggle("done", !!done[key]);
+      cell.classList.toggle("miss", !done[key] && key < todayStr);
+    }
+    stats();
+    save();
+  }
+
+  // Storage: localStorage in a normal browser, Claude's store inside the app,
+  // memory as a last resort. Back up and Restore cover the last case.
+  var mem = null, storageOk = true;
+  var store = {
+    read: function () {
+      try {
+        var v = window.localStorage.getItem(KEY);
+        if (v !== null) return v;
+      } catch (e) { storageOk = false; }
+      if (window.storage && window.storage.get) {
+        try {
+          var r = window.storage.get(KEY);
+          if (r && r.value) return r.value;
+        } catch (e) {}
+      }
+      return mem;
+    },
+    write: function (v) {
+      mem = v;
+      try { window.localStorage.setItem(KEY, v); }
+      catch (e) {
+        storageOk = false;
+        if (window.storage && window.storage.set) {
+          try { window.storage.set(KEY, v); } catch (e2) {}
+        }
+      }
+    }
+  };
+
+  var timer = null;
+  function save() {
+    clearTimeout(timer);
+    timer = setTimeout(function () { store.write(JSON.stringify(done)); }, 250);
+  }
+
+  document.getElementById("reset").addEventListener("click", function () {
+    if (!window.confirm("Clear every tick? This cannot be undone.")) return;
+    done = {};
+    build();
+    save();
+  });
+
+  var box = document.getElementById("codebox");
+  document.getElementById("backup").addEventListener("click", function () {
+    box.hidden = false;
+    box.value = JSON.stringify(Object.keys(done).sort());
+    box.select();
+  });
+  document.getElementById("restore").addEventListener("click", function () {
+    if (box.hidden) { box.hidden = false; box.value = ""; box.focus(); return; }
+    try {
+      var arr = JSON.parse(box.value);
+      if (!Array.isArray(arr)) throw 0;
+      done = {};
+      arr.forEach(function (k) { done[k] = true; });
+      build();
+      save();
+      box.hidden = true;
+    } catch (e) { window.alert("That code could not be read. Paste the whole thing, brackets included."); }
+  });
+
+  (function init() {
+    var raw = store.read();
+    if (raw) { try { done = JSON.parse(raw) || {}; } catch (e) { done = {}; } }
+    if (!storageOk) document.getElementById("storeWarn").hidden = false;
+    build();
+    var t = document.getElementById("d-" + todayStr);
+    if (t) t.scrollIntoView({ block: "center" });
+  })();
+})();
+</script>
+
+<script>
+if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
+  navigator.serviceWorker.register("sw.js").catch(function () {});
+}
+</script>
+</body>
+</html>
