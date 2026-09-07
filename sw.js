@@ -1,4 +1,4 @@
-var CACHE = "cfa-l2-v1";
+var CACHE = "cfa-l2-v2";
 var FILES = ["./", "./index.html", "./manifest.json"];
 
 self.addEventListener("install", function (e) {
